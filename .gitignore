@@ -1,0 +1,19 @@
+# Personal config (contains phone numbers, host details, etc.)
+*/config.local.md
+
+# Secrets
+*/.env
+*.env
+
+# Personal contacts
+*/scripts/contacts-aliases.json
+
+# Dependencies
+node_modules/
+
+# macOS
+.DS_Store
+._*
+
+# TypeScript build output
+*/scripts/dist/

@@ -1,0 +1,20 @@
+{
+  "name": "whatsapp-sender-scripts",
+  "version": "2.0.0",
+  "description": "WhatsApp automation scripts for Claude Code via WAHA",
+  "scripts": {
+    "send": "ts-node send-message.ts",
+    "send-image": "ts-node send-image.ts",
+    "send-voice": "ts-node send-voice.ts",
+    "send-file": "ts-node send-file.ts",
+    "get-members": "ts-node get-group-members.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.2"
+  }
+}

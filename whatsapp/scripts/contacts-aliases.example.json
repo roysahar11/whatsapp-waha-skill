@@ -1,0 +1,14 @@
+{
+  "aliases": {
+    "partner": {
+      "phone": "972501234567",
+      "name": "Partner Name",
+      "language": "english"
+    },
+    "mom": {
+      "phone": "972509876543",
+      "name": "Mom",
+      "language": "hebrew"
+    }
+  }
+}
