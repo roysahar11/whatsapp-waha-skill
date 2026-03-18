@@ -1,6 +1,6 @@
 # WhatsApp WAHA Skill
 
-A skill for sending and reading WhatsApp messages via [WAHA](https://waha.devlike.pro/) (WhatsApp HTTP API). Works with any AI coding agent that supports skills — [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [CoWork](https://cowork.anthropic.com/), [Codex](https://openai.com/index/introducing-codex/), [ChatGPT](https://chatgpt.com/), and others.
+A skill for sending and reading WhatsApp messages via [WAHA](https://waha.devlike.pro/) (WhatsApp HTTP API). Should work with any AI coding agent that supports skills — [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [CoWork](https://cowork.anthropic.com/), [Codex](https://openai.com/index/introducing-codex/), [ChatGPT](https://chatgpt.com/), and others. Tested with Claude Code.
 
 ## What It Does
 
@@ -34,28 +34,7 @@ You ──→ AI Agent ──→ WhatsApp Skill (TypeScript scripts) ──→ W
 
 The skill's TypeScript scripts call WAHA's API endpoints to send messages, read chats, manage contacts, etc. Your AI agent orchestrates everything: it resolves recipients, drafts messages, asks for your approval, and executes the right script.
 
-### WAHA Plus vs. WAHA Core (Free)
-
-[WAHA](https://waha.devlike.pro/) comes in two versions. This skill uses **WAHA Plus** (`devlikeapro/waha-plus:noweb`), but many features work with the free Core version too.
-
-| Skill feature | Core (Free) | Plus ($19/mo) |
-|---------------|:----:|:----:|
-| Send & receive text messages | Yes | Yes |
-| Send contact cards (vCard) | Yes | Yes |
-| **Send images** | **No** | **Yes** |
-| **Send files (PDF, DOCX, etc.)** | **No** | **Yes** |
-| **Send voice notes** | **No** | **Yes** |
-| Read chat history & message store | Yes | Yes |
-| Contact search & info | Yes | Yes |
-| Profile pictures | Yes | Yes |
-| Group members & management | Yes | Yes |
-| Session management | Yes | Yes |
-
-**The key difference is media sending.** Sending images, files, and voice notes requires WAHA Plus. Text messages, chat history, contacts, and group features all work with the free Core version.
-
-If you only need to **send text messages** and **read chats**, WAHA Core works fine. If you need to **send images, files, or voice notes**, you'll need [WAHA Plus](https://waha.devlike.pro/docs/how-to/plus-version/).
-
-> To use the free version, replace `devlikeapro/waha-plus:noweb` with `devlikeapro/waha:noweb` in the Docker commands below.
+This skill should work with both [WAHA Core](https://waha.devlike.pro/) (free) and [WAHA Plus](https://waha.devlike.pro/docs/how-to/waha-plus/), but has only been tested with WAHA Plus. The Docker commands below use the Plus image (`devlikeapro/waha-plus:noweb`) — to use Core instead, replace it with `devlikeapro/waha:noweb`.
 
 ## Prerequisites
 
