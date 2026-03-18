@@ -1,10 +1,10 @@
-# Claude Code WhatsApp Skill
+# WhatsApp WAHA Skill
 
-A [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skill for sending and reading WhatsApp messages via [WAHA](https://waha.devlike.pro/) (WhatsApp HTTP API).
+A skill for sending and reading WhatsApp messages via [WAHA](https://waha.devlike.pro/) (WhatsApp HTTP API). Works with any AI coding agent that supports skills — [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [CoWork](https://cowork.anthropic.com/), [Codex](https://openai.com/index/introducing-codex/), [ChatGPT](https://chatgpt.com/), and others.
 
 ## What It Does
 
-This project adds WhatsApp capabilities to Claude Code as a **skill** — a set of instructions and scripts that Claude Code loads automatically when you ask it to do anything involving WhatsApp. Just talk to Claude naturally:
+This project adds WhatsApp capabilities to your AI agent as a **skill** — a set of instructions and scripts that the agent loads automatically when you ask it to do anything involving WhatsApp. Just talk naturally:
 
 - *"Send mom a happy birthday message"* — drafts a message, resolves "mom" from your contact aliases, asks for approval, sends
 - *"What did I miss in the family group?"* — fetches recent group messages and summarizes
@@ -27,48 +27,57 @@ Includes a companion **waha-admin** skill for WAHA infrastructure troubleshootin
 ## How It Works
 
 ```
-You ──→ Claude Code ──→ WhatsApp Skill (TypeScript scripts) ──→ WAHA API ──→ WhatsApp
+You ──→ AI Agent ──→ WhatsApp Skill (TypeScript scripts) ──→ WAHA API ──→ WhatsApp
 ```
 
 [WAHA](https://waha.devlike.pro/) (WhatsApp HTTP API) is a self-hosted server that exposes WhatsApp functionality as a REST API. It runs as a Docker container and connects to WhatsApp via the multi-device protocol — your phone doesn't need to stay online.
 
-The skill's TypeScript scripts call WAHA's API endpoints to send messages, read chats, manage contacts, etc. Claude Code orchestrates everything: it resolves recipients, drafts messages, asks for your approval, and executes the right script.
+The skill's TypeScript scripts call WAHA's API endpoints to send messages, read chats, manage contacts, etc. Your AI agent orchestrates everything: it resolves recipients, drafts messages, asks for your approval, and executes the right script.
 
-### WAHA Plus vs. WAHA Free
+### WAHA Plus vs. WAHA Core (Free)
 
-WAHA comes in two versions. This skill uses **WAHA Plus** (`devlikeapro/waha-plus:noweb`), but most features work with the free version too.
+[WAHA](https://waha.devlike.pro/) comes in two versions. This skill uses **WAHA Plus** (`devlikeapro/waha-plus:noweb`), but many features work with the free Core version too.
 
-| Feature | Free | Plus |
-|---------|:----:|:----:|
-| Send/receive messages | Yes | Yes |
-| Send images, files, voice notes | Yes | Yes |
-| Contact search and info | Yes | Yes |
-| Group management | Yes | Yes |
-| **Message history & store** | **No** | **Yes** |
-| **Full message sync** | **No** | **Yes** |
+| Skill feature | Core (Free) | Plus ($19/mo) |
+|---------------|:----:|:----:|
+| Send & receive text messages | Yes | Yes |
+| Send contact cards (vCard) | Yes | Yes |
+| **Send images** | **No** | **Yes** |
+| **Send files (PDF, DOCX, etc.)** | **No** | **Yes** |
+| **Send voice notes** | **No** | **Yes** |
+| Read chat history & message store | Yes | Yes |
+| Contact search & info | Yes | Yes |
+| Profile pictures | Yes | Yes |
+| Group members & management | Yes | Yes |
+| Session management | Yes | Yes |
 
-**The key difference is message history.** WAHA Plus includes a built-in message store (SQLite) that syncs your full chat history. Without it, you can only read messages received *after* the WAHA session was created — no historical messages.
+**The key difference is media sending.** Sending images, files, and voice notes requires WAHA Plus. Text messages, chat history, contacts, and group features all work with the free Core version.
 
-If you only need to **send** messages and read **new incoming** messages, WAHA Free works fine. If you need to **read chat history** (e.g., "what did I miss in this group?"), you'll need [WAHA Plus](https://waha.devlike.pro/docs/how-to/plus-version/).
+If you only need to **send text messages** and **read chats**, WAHA Core works fine. If you need to **send images, files, or voice notes**, you'll need [WAHA Plus](https://waha.devlike.pro/docs/how-to/plus-version/).
 
 > To use the free version, replace `devlikeapro/waha-plus:noweb` with `devlikeapro/waha:noweb` in the Docker commands below.
 
 ## Prerequisites
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+- An AI coding agent with skill support (e.g., [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [CoWork](https://cowork.anthropic.com/), [Codex](https://openai.com/index/introducing-codex/), [ChatGPT](https://chatgpt.com/))
 - [WAHA](https://waha.devlike.pro/) instance (self-hosted via Docker)
 - Node.js (v18+)
 - `ffmpeg` (optional — required only for sending voice notes)
 
 ## Installation
 
-### 1. Clone and symlink
+### 1. Clone and install the skill
 
+The installation path depends on your agent. Examples:
+
+**Claude Code / CoWork:**
 ```bash
-git clone https://github.com/roysahar11/claude-code-whatsapp.git
-ln -s "$(pwd)/claude-code-whatsapp/whatsapp" ~/.claude/skills/whatsapp
-ln -s "$(pwd)/claude-code-whatsapp/waha-admin" ~/.claude/skills/waha-admin
+git clone https://github.com/roysahar11/whatsapp-waha-skill.git
+ln -s "$(pwd)/whatsapp-waha-skill/whatsapp" ~/.claude/skills/whatsapp
+ln -s "$(pwd)/whatsapp-waha-skill/waha-admin" ~/.claude/skills/waha-admin
 ```
+
+**Other agents:** Clone the repo and point your agent's skill configuration to the `whatsapp/SKILL.md` file. The exact method varies by agent — consult your agent's documentation for how to register skills.
 
 ### 2. Install dependencies
 
@@ -132,7 +141,7 @@ cp ~/.claude/skills/waha-admin/config.example.md ~/.claude/skills/waha-admin/con
 
 ### 6. Verify
 
-Open Claude Code and test:
+Open your agent and test:
 ```
 Send a test message to myself on WhatsApp
 ```
@@ -143,7 +152,7 @@ Contact aliases let you refer to people by name instead of phone number. When yo
 
 ### Why aliases exist
 
-Without aliases, Claude would need to search the WAHA contacts API every time you mention someone by name. This is slow, may return multiple matches, and doesn't work well with nicknames or non-Latin names. Aliases solve this by providing:
+Without aliases, the agent would need to search the WAHA contacts API every time you mention someone by name. This is slow, may return multiple matches, and doesn't work well with nicknames or non-Latin names. Aliases solve this by providing:
 
 - **Instant resolution** — no API call, no ambiguity
 - **Nicknames and multiple aliases** — define both "mom" and "אמא" for the same contact
@@ -181,13 +190,13 @@ cp ~/.claude/skills/whatsapp/scripts/contacts-aliases.example.json \
 }
 ```
 
-You can define multiple aliases for the same person (e.g., one in English and one in Hebrew). The `language` field tells Claude which language to use when drafting messages for that contact.
+You can define multiple aliases for the same person (e.g., one in English and one in Hebrew). The `language` field tells the agent which language to use when drafting messages for that contact.
 
-If a name doesn't match any alias, Claude falls back to searching contacts via the WAHA API.
+If a name doesn't match any alias, the agent falls back to searching contacts via the WAHA API.
 
 ## Usage
 
-Once installed, Claude Code automatically invokes the skill when you ask it to do anything with WhatsApp. Just talk naturally:
+Once installed, your agent automatically invokes the skill when you ask it to do anything with WhatsApp. Just talk naturally:
 
 - "Send a message to myself: hello world"
 - "Read my last 10 WhatsApp messages"
@@ -209,9 +218,9 @@ Autonomous mode only sends to your own number (no approval prompts). Useful for 
 ## File Structure
 
 ```
-claude-code-whatsapp/
+whatsapp-waha-skill/
 ├── whatsapp/
-│   ├── SKILL.md              # Skill instructions (loaded by Claude Code)
+│   ├── SKILL.md              # Skill instructions (loaded by your agent)
 │   ├── config.local.md       # Your personal config (gitignored)
 │   ├── config.example.md     # Template for config.local.md
 │   └── scripts/
@@ -244,8 +253,8 @@ claude-code-whatsapp/
 ## Safety
 
 - **Default recipient is you** — messages go to your own number unless you explicitly specify someone else
-- **Two-step approval** — Claude asks you to approve the draft, then confirm the send — every time
-- **Credentials isolated** — `.env` files are never read or displayed by Claude; scripts load them internally via dotenv
+- **Two-step approval** — the agent asks you to approve the draft, then confirm the send — every time
+- **Credentials isolated** — `.env` files are never read or displayed by the agent; scripts load them internally via dotenv
 - **Dry run** — all send commands support `--dry-run` to preview without sending
 - **Broadcast safeguards** — extra confirmation required for `--dm-all`, with recipient count preview
 - **Rate limiting** — 500ms delay between messages in broadcast mode
