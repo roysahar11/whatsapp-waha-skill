@@ -19,42 +19,30 @@ Always send to the user's own phone number (from `config.local.md`) unless the u
 
 - If user says "send a message" without specifying recipient → send to their own number
 - If user says "test this message" → send to their own number
-- If user says "send to the group" → STOP and ask: "Which group? Please confirm you want me to send to others, not just to yourself."
+- If user says "send to the group" without identifying it → ask which group, then apply Rule 2
 
-### Rule 2: TWO-STEP APPROVAL REQUIRED
+### Rule 2: APPROVAL DEPENDS ON THE RECIPIENTS
 
-Get explicit approval TWICE before sending any message:
+Apply these rules to every supported message type, including text, images, voice notes, files, and contact cards:
 
-**Step 1 - Draft Approval:**
-```
-Claude: "Here's the draft message:
----
-[MESSAGE CONTENT]
----
-Recipient: [PHONE/GROUP]
+| Destination | Required approvals | Action |
+|---|---|---|
+| The user's own self-chat | **None** | Send directly within the requested task or workflow. No draft approval or send confirmation is needed, in interactive sessions as well as automated workflows. |
+| One person other than the user | **One** | Obtain one explicit approval covering the message and the named recipient, then send. A clear user instruction to send specific content to that recipient already counts as approval. Otherwise, present the draft and recipient together and ask once. |
+| Multiple recipients, a group, or a broadcast | **Two** | First obtain approval of the draft and full audience; then obtain a separate final send confirmation. |
 
-Do you approve this draft? (yes/no/edit)"
-```
-→ Wait for user to say "yes", "approved", "looks good", etc.
+Self-chat includes `--phone "self"` and the user's own number from `config.local.md`, after normalizing its format. This exemption does not depend on using autonomous mode or on whether the user is available to respond.
 
-**Step 2 - Send Confirmation:**
-```
-Claude: "Ready to send to [RECIPIENT].
-Type 'send' to confirm, or 'cancel' to abort."
-```
-→ ONLY proceed if user types "send", "yes send it", "confirm", or similar explicit confirmation.
+For multiple recipients:
 
-Never send without BOTH approvals.
+1. **Draft approval:** Show the message and the full recipient list or identified group, including recipient count for broadcasts. Wait for explicit approval.
+2. **Send confirmation:** Ask for final confirmation to send that approved message to that audience. Send after confirmation.
+
+Count recipients across the whole requested operation: a group is a multiple-recipient destination, and sending a batch one person at a time still requires the two-step workflow. Reuse approvals already given for the same content and audience.
 
 ### Rule 3: EXPLICIT PERMISSION FOR NON-SELF RECIPIENTS
 
-To send to anyone other than the user's own number, the user must explicitly say one of:
-- "send to [specific number/group]"
-- "message [person/group name]"
-- "yes, send to others"
-- Other clear, explicit instruction naming the recipient
-
-Ambiguous requests = send to self for testing.
+For any destination other than self-chat, resolve the intended person, group, or recipient list and obtain the approval required by Rule 2. Approval must cover the content and the identified audience. Ask for clarification when an external recipient is unclear.
 
 ### Rule 4: NEVER EXPOSE SECRETS
 
@@ -67,7 +55,7 @@ Ambiguous requests = send to self for testing.
 
 ## Autonomous Mode
 
-**For cron jobs and automated agents** that need to send messages without user interaction.
+For cron jobs and automated agents sending messages to the user's own self-chat without user interaction. Self-chat also requires no approval during ordinary interactive use; autonomous mode is not a prerequisite for that exemption.
 
 **Invocation:** `/whatsapp autonomous <operation> <args>`
 
@@ -76,22 +64,7 @@ Ambiguous requests = send to self for testing.
 /whatsapp autonomous send-message --phone "self" --message "Daily report ready"
 ```
 
-### Autonomous Mode Rules
-
-1. **ONLY for self-chat** - Autonomous mode can only send to the user's own number
-2. **No two-step approval** - Skip the draft/confirm steps
-
-### When to use Autonomous Mode
-
-- Cron jobs sending daily reports
-- Agents sending status updates to the user
-- Automated notifications to self-chat
-
-### When NOT to use Autonomous Mode
-
-- Sending to any recipient other than the user
-- Interactive sessions where the user can approve
-- Bulk/broadcast messages
+Autonomous mode is limited to self-chat. For external recipients, apply Rule 2: one approval for one person, two approvals for multiple recipients or a group.
 
 ---
 
@@ -364,7 +337,7 @@ Check `config.local.md` for any personal integration preferences (e.g., a drafti
 
 ### Sending Safety
 1. **DEFAULT TO SELF** - Always send to the user's own number unless explicitly told otherwise
-2. **TWO-STEP APPROVAL** - Get draft approval, then send confirmation
+2. **RECIPIENT-BASED APPROVAL** - Follow Rule 2: self-chat needs none, one external person needs one, multiple recipients or a group need two
 3. **NEVER ASSUME RECIPIENTS** - If unclear, ask before sending
 
 ### Credential Security
@@ -378,7 +351,7 @@ Check `config.local.md` for any personal integration preferences (e.g., a drafti
 9. **Max 200 messages/day** recommended per number for bulk operations
 
 ### Broadcast Safety (--dm-all)
-10. **EXTRA CONFIRMATION REQUIRED** for --dm-all broadcasts
+10. **TWO-STEP APPROVAL** - Apply Rule 2 to the full audience of `--dm-all` broadcasts
 11. **Always preview recipient count** before broadcasting
 12. **Suggest sending to self first** to verify message content
 

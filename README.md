@@ -20,7 +20,7 @@ This project adds WhatsApp capabilities to your AI agent as a **skill** — a se
 | **Contacts** | Search contacts, get info, list group members, resolve aliases |
 | **Groups** | Send to groups, broadcast DMs to all members, find who joined recently |
 | **Autonomous mode** | For cron jobs and agents — sends to self without approval prompts |
-| **Safety** | Default-to-self recipient, two-step send approval, dry-run, credential isolation |
+| **Safety** | Default-to-self recipient, approval based on recipients (self: none; one person: one; multiple recipients: two), dry-run, credential isolation |
 
 Includes a companion **waha-admin** skill for WAHA infrastructure troubleshooting (session recovery, container management, log inspection).
 
@@ -32,7 +32,7 @@ You ──→ AI Agent ──→ WhatsApp Skill (TypeScript scripts) ──→ W
 
 [WAHA](https://waha.devlike.pro/) (WhatsApp HTTP API) is a self-hosted server that exposes WhatsApp functionality as a REST API. It runs as a Docker container and connects to WhatsApp via the multi-device protocol — your phone doesn't need to stay online.
 
-The skill's TypeScript scripts call WAHA's API endpoints to send messages, read chats, manage contacts, etc. Your AI agent orchestrates everything: it resolves recipients, drafts messages, asks for your approval, and executes the right script.
+The skill's TypeScript scripts call WAHA's API endpoints to send messages, read chats, manage contacts, etc. Your AI agent orchestrates everything: it resolves recipients, drafts messages, applies the recipient-based approval rules, and executes the right script.
 
 This skill should work with both [WAHA Core](https://waha.devlike.pro/) (free) and [WAHA Plus](https://waha.devlike.pro/docs/how-to/waha-plus/), but has only been tested with WAHA Plus. The Docker commands below use the Plus image (`devlikeapro/waha-plus:noweb`) — to use Core instead, replace it with `devlikeapro/waha:noweb`.
 
@@ -192,7 +192,7 @@ For agents and cron jobs that send notifications without user interaction:
 /whatsapp autonomous send-message --phone "self" --message "Daily report ready"
 ```
 
-Autonomous mode only sends to your own number (no approval prompts). Useful for automated daily reports, monitoring alerts, or agent-to-user notifications.
+Autonomous mode only sends to your own number (no approval prompts). Useful for automated daily reports, monitoring alerts, or agent-to-user notifications. Self-chat also requires no approval in ordinary interactive sessions; using autonomous mode is optional for self-chat.
 
 ## File Structure
 
@@ -232,10 +232,12 @@ whatsapp-waha-skill/
 ## Safety
 
 - **Default recipient is you** — messages go to your own number unless you explicitly specify someone else
-- **Two-step approval** — the agent asks you to approve the draft, then confirm the send — every time
+- **Self-chat** — no approval prompts, in interactive sessions as well as automated workflows
+- **One external person** — one approval covering the content and named recipient; a clear instruction to send specific content already counts
+- **Multiple recipients or a group** — approve the draft and audience, then give a separate final send confirmation
 - **Credentials isolated** — `.env` files are never read or displayed by the agent; scripts load them internally via dotenv
 - **Dry run** — all send commands support `--dry-run` to preview without sending
-- **Broadcast safeguards** — extra confirmation required for `--dm-all`, with recipient count preview
+- **Broadcast safeguards** — the same two-step approval applies to `--dm-all`, with recipient count preview
 - **Rate limiting** — 500ms delay between messages in broadcast mode
 
 ## License

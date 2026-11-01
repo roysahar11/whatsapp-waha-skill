@@ -10,8 +10,7 @@ Example:
 
 When asked to send a WhatsApp message to clients/groups:
 1. Draft the message using `/my-voice-skill`
-2. Show draft and ask for approval
-3. Clarify recipient
-4. Get send confirmation before executing
-5. Send via the appropriate script
+2. Resolve the recipient, defaulting to the user's own self-chat
+3. Apply Rule 2 in SKILL.md for recipient-based approval requirements
+4. Send via the appropriate script
 -->
