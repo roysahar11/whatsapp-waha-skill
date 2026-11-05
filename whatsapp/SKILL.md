@@ -28,7 +28,7 @@ Apply these rules to every supported message type, including text, images, voice
 | Destination | Required approvals | Action |
 |---|---|---|
 | The user's own self-chat | **None** | Send directly within the requested task or workflow. No draft approval or send confirmation is needed, in interactive sessions as well as automated workflows. |
-| One person other than the user | **One** | Obtain one explicit approval covering the message and the named recipient, then send. A clear user instruction to send specific content to that recipient already counts as approval. Otherwise, present the draft and recipient together and ask once. |
+| One person other than the user | **Existing authorization or one new approval** | Send when an applicable prior approval, approved template, or authorized workflow covers this execution (see below). Otherwise, present the message and recipient and ask once. A clear instruction to send specific content to that recipient already counts. |
 | Multiple recipients, a group, or a broadcast | **Two** | First obtain approval of the draft and full audience; then obtain a separate final send confirmation. |
 
 Self-chat includes `--phone "self"` and the user's own number from `config.local.md`, after normalizing its format. This exemption does not depend on using autonomous mode or on whether the user is available to respond.
@@ -40,28 +40,37 @@ For multiple recipients:
 
 Count recipients across the whole requested operation: a group is a multiple-recipient destination, and sending a batch one person at a time still requires the two-step workflow. Reuse approvals already given for the same content and audience.
 
-#### Reuse approval from an authorized workflow
+#### Existing authorization for templates and workflows
 
-A user may explicitly approve a complete workflow, including its WhatsApp
-message, in one instruction. A clear approval of that workflow satisfies the
-one-person approval above when it covers the message and identified recipient.
-The approval may be a short affirmative reply or an approving emoji in context;
-it need not repeat the word WhatsApp. Read `config.local.md` for user-granted
-standing authorizations and follow the invoked workflow's documented scope.
-Do not request a second WhatsApp approval for an already-authorized send.
+Before requesting a new approval, check the user's prior instructions, applicable
+standing authorizations, and the invoked skill or workflow. A template approved
+**for sending**, or user-authorized instructions in another skill, can already
+authorize its prescribed message. Execute within that authorization without
+requesting fresh explicit approval for each send. Keep domain-specific approval
+rules and templates in their owning skill; this skill applies their authorization.
 
-For a receipt workflow, present the preview, its standard receipt message, and
-the documented contact together, then ask once whether to **issue and send**.
-An affirmative reply authorizes both. Reuse any explicit standing instruction
-that receipt approval also covers its usual message to the documented contact.
-An unrelated message, another document, a new recipient, or multiple recipients
-still follows the ordinary rules above unless separately authorized.
+For a send to one person, confirm that the authorization covers the purpose or
+trigger, permitted content or template (including attachments), and recipient or
+an explicit recipient-selection rule. Fill factual placeholders from the approved
+sources and respect any limits on repetition. A documented recipient-selection
+rule can identify the contact for the current task without a new named-recipient
+approval each time. A template's existence or approval of its wording alone does
+not establish permission to send it.
 
-Make authorization visible to the execution reviewer: include the user's actual
-approval, the approved operation and message summary, recipient name and number,
-and the documented-contact source. Include the source and date of any applicable
-standing instruction. Keep bearer links and credentials out of explanations and
-logs. A skill's assertion alone is not a substitute for user-granted authority.
+A clear affirmative response to a combined workflow approval can authorize its
+WhatsApp step too; it need not repeat the word WhatsApp. Respect later limits or
+revocations. If content, attachments, recipient, or repetition fall outside the
+existing scope, ask only for the missing authorization. A one-person authorization
+does not cover a group, broadcast, or batch; apply the multiple-recipient rules
+above to the full audience.
+
+Make the existing authorization visible to the execution reviewer: cite its
+source and date when available, the authorized template or workflow and scope,
+and the resolved recipient and selection source. Include any current approval
+when relevant; it need not be a new explicit send confirmation. Keep bearer
+links and credentials out of explanations and logs. Another skill supplies
+authorization only when it records or implements user-granted authority;
+its mere instruction to send does not create that authority.
 
 If a reviewer says authorization evidence is missing, recheck the existing
 approval and the reviewer's permitted next steps. If an evidence-based retry is
@@ -69,9 +78,9 @@ allowed, submit the same action with the omitted authorization evidence instead
 of asking the user to repeat it. Honor an explicit block or requirement for new
 approval; do not route around it. Report any remaining block accurately.
 
-### Rule 3: EXPLICIT PERMISSION FOR NON-SELF RECIPIENTS
+### Rule 3: MATCH EXTERNAL SENDS TO THEIR AUTHORIZATION
 
-For any destination other than self-chat, resolve the intended person, group, or recipient list and use the approval required by Rule 2, including an applicable existing workflow approval. Approval must cover the content and the identified audience. Ask for clarification when an external recipient is unclear.
+For any destination other than self-chat, resolve the intended person, group, or recipient list and apply Rule 2 using existing authorization first. Ask for new approval only when the available authorization does not cover the send; clarify an unclear recipient rather than guessing.
 
 ### Rule 4: NEVER EXPOSE SECRETS
 
@@ -93,7 +102,7 @@ For cron jobs and automated agents sending messages to the user's own self-chat 
 /whatsapp autonomous send-message --phone "self" --message "Daily report ready"
 ```
 
-Autonomous mode is limited to self-chat. For external recipients, apply Rule 2: one approval for one person, two approvals for multiple recipients or a group.
+This invocation does not expand authorization. External sends follow Rule 2, including applicable standing or workflow authorization; multiple-recipient sends retain their audience-wide approval requirements.
 
 ---
 
@@ -366,7 +375,7 @@ Check `config.local.md` for any personal integration preferences (e.g., a drafti
 
 ### Sending Safety
 1. **DEFAULT TO SELF** - Use self-chat when neither the user nor an authorized workflow identifies an external recipient
-2. **RECIPIENT-BASED APPROVAL** - Follow Rule 2: self-chat needs none, one external person needs one, multiple recipients or a group need two
+2. **REUSE EXISTING AUTHORIZATION** - Follow Rule 2 before asking again: an applicable prior approval, approved sending template, or authorized workflow can cover a send; apply the full-audience rules for groups and batches
 3. **NEVER ASSUME RECIPIENTS** - If unclear, ask before sending
 
 ### Credential Security
