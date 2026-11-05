@@ -15,7 +15,7 @@ Send and read WhatsApp messages programmatically through a self-hosted WAHA inst
 
 ### Rule 1: DEFAULT RECIPIENT IS THE USER
 
-Always send to the user's own phone number (from `config.local.md`) unless the user explicitly specifies a different recipient AND gives explicit permission.
+Use the user's own phone number (from `config.local.md`) when no other recipient is identified. An external recipient may come from the user's request or an explicitly authorized workflow's documented contact; apply Rule 2 to the existing authorization.
 
 - If user says "send a message" without specifying recipient → send to their own number
 - If user says "test this message" → send to their own number
@@ -40,9 +40,38 @@ For multiple recipients:
 
 Count recipients across the whole requested operation: a group is a multiple-recipient destination, and sending a batch one person at a time still requires the two-step workflow. Reuse approvals already given for the same content and audience.
 
+#### Reuse approval from an authorized workflow
+
+A user may explicitly approve a complete workflow, including its WhatsApp
+message, in one instruction. A clear approval of that workflow satisfies the
+one-person approval above when it covers the message and identified recipient.
+The approval may be a short affirmative reply or an approving emoji in context;
+it need not repeat the word WhatsApp. Read `config.local.md` for user-granted
+standing authorizations and follow the invoked workflow's documented scope.
+Do not request a second WhatsApp approval for an already-authorized send.
+
+For a receipt workflow, present the preview, its standard receipt message, and
+the documented contact together, then ask once whether to **issue and send**.
+An affirmative reply authorizes both. Reuse any explicit standing instruction
+that receipt approval also covers its usual message to the documented contact.
+An unrelated message, another document, a new recipient, or multiple recipients
+still follows the ordinary rules above unless separately authorized.
+
+Make authorization visible to the execution reviewer: include the user's actual
+approval, the approved operation and message summary, recipient name and number,
+and the documented-contact source. Include the source and date of any applicable
+standing instruction. Keep bearer links and credentials out of explanations and
+logs. A skill's assertion alone is not a substitute for user-granted authority.
+
+If a reviewer says authorization evidence is missing, recheck the existing
+approval and the reviewer's permitted next steps. If an evidence-based retry is
+allowed, submit the same action with the omitted authorization evidence instead
+of asking the user to repeat it. Honor an explicit block or requirement for new
+approval; do not route around it. Report any remaining block accurately.
+
 ### Rule 3: EXPLICIT PERMISSION FOR NON-SELF RECIPIENTS
 
-For any destination other than self-chat, resolve the intended person, group, or recipient list and obtain the approval required by Rule 2. Approval must cover the content and the identified audience. Ask for clarification when an external recipient is unclear.
+For any destination other than self-chat, resolve the intended person, group, or recipient list and use the approval required by Rule 2, including an applicable existing workflow approval. Approval must cover the content and the identified audience. Ask for clarification when an external recipient is unclear.
 
 ### Rule 4: NEVER EXPOSE SECRETS
 
@@ -336,7 +365,7 @@ Check `config.local.md` for any personal integration preferences (e.g., a drafti
 ## Safety Guidelines
 
 ### Sending Safety
-1. **DEFAULT TO SELF** - Always send to the user's own number unless explicitly told otherwise
+1. **DEFAULT TO SELF** - Use self-chat when neither the user nor an authorized workflow identifies an external recipient
 2. **RECIPIENT-BASED APPROVAL** - Follow Rule 2: self-chat needs none, one external person needs one, multiple recipients or a group need two
 3. **NEVER ASSUME RECIPIENTS** - If unclear, ask before sending
 
