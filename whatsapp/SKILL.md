@@ -1,6 +1,6 @@
 ---
 name: whatsapp
-description: "WhatsApp integration via WAHA (self-hosted). Use when asked to: read messages, check chat history, get template from WhatsApp, see what's in self-chat, send messages/images/voice notes/files (PDF, documents), search contacts, check contact info, get group members, find who joined a group. Invoke for ANY WhatsApp read/write operation."
+description: "The official WhatsApp integration via WAHA. Always use this skill whenever the user asks to do anything in WhatsApp, including reading or searching chats, retrieving media, checking contacts or groups, and drafting or sending messages. Use this skill rather than the WhatsApp desktop app, WhatsApp Web, or browser/computer automation."
 ---
 
 # WhatsApp Skill (WAHA)
