@@ -114,16 +114,13 @@ This invocation does not expand authorization. External sends follow Rule 2, inc
 
 ## Running Commands
 
-**Always use the `wa.sh` wrapper script:**
+Run a script with the bundled ts-node. Both paths are relative to this skill's folder (the one that holds this SKILL.md), so put that folder's path in front of each:
 
 ```bash
-~/.claude/skills/whatsapp/scripts/wa.sh <script.ts> [args...]
+scripts/node_modules/.bin/ts-node scripts/<script.ts> [args...]
 ```
 
-This wrapper:
-- Handles the directory change automatically
-- Loads `.env` from the correct location
-- Easier to match in permission rules
+Examples in this skill show only `<script.ts> [args...]`; always expand them to that full command. Run it from your current directory instead of `cd`-ing into the skill: the scripts find their own `.env`, and relative paths in arguments resolve against where you run them. Where other docs say `wa.sh <script.ts>`, use this command instead.
 
 ---
 
@@ -132,7 +129,7 @@ This wrapper:
 ### Send Text Message
 
 ```bash
-~/.claude/skills/whatsapp/scripts/wa.sh send-message.ts --phone "972501234567" --message "Hello!"
+send-message.ts --phone "972501234567" --message "Hello!"
 ```
 
 **Options:**
@@ -145,22 +142,22 @@ This wrapper:
 **Examples:**
 ```bash
 # Single person
-~/.claude/skills/whatsapp/scripts/wa.sh send-message.ts --phone "972501234567" --message "Hello!"
+send-message.ts --phone "972501234567" --message "Hello!"
 
 # Group message
-~/.claude/skills/whatsapp/scripts/wa.sh send-message.ts --group "120363040650557401@g.us" --message "Hello everyone!"
+send-message.ts --group "120363xxxxxxxxxxxx@g.us" --message "Hello everyone!"
 
 # Broadcast DM to all group members
-~/.claude/skills/whatsapp/scripts/wa.sh send-message.ts --group "120363040650557401@g.us" --dm-all --message "Personal message to all"
+send-message.ts --group "120363xxxxxxxxxxxx@g.us" --dm-all --message "Personal message to all"
 
 # Dry run (test without sending)
-~/.claude/skills/whatsapp/scripts/wa.sh send-message.ts --phone "972501234567" --message "Test" --dry-run
+send-message.ts --phone "972501234567" --message "Test" --dry-run
 ```
 
 ### Send Image
 
 ```bash
-~/.claude/skills/whatsapp/scripts/wa.sh send-image.ts --phone "972501234567" --image "/path/to/image.jpg" --caption "Check this out!"
+send-image.ts --phone "972501234567" --image "/path/to/image.jpg" --caption "Check this out!"
 ```
 
 **Options:**
@@ -172,7 +169,7 @@ This wrapper:
 ### Send Voice Note
 
 ```bash
-~/.claude/skills/whatsapp/scripts/wa.sh send-voice.ts --phone "972501234567" --audio "/path/to/audio.mp3"
+send-voice.ts --phone "972501234567" --audio "/path/to/audio.mp3"
 ```
 
 **Options:**
@@ -185,7 +182,7 @@ This wrapper:
 ### Send File (PDF, Documents, etc.)
 
 ```bash
-~/.claude/skills/whatsapp/scripts/wa.sh send-file.ts --phone "972501234567" --file "/path/to/document.pdf"
+send-file.ts --phone "972501234567" --file "/path/to/document.pdf"
 ```
 
 **Options:**
@@ -198,13 +195,13 @@ This wrapper:
 **Examples:**
 ```bash
 # Send a PDF document
-~/.claude/skills/whatsapp/scripts/wa.sh send-file.ts --phone "972501234567" --file "/path/to/report.pdf" --caption "Here's the report"
+send-file.ts --phone "972501234567" --file "/path/to/report.pdf" --caption "Here's the report"
 
 # Send to a group with custom filename
-~/.claude/skills/whatsapp/scripts/wa.sh send-file.ts --group "120363xxx@g.us" --file "/path/to/data.xlsx" --filename "Q4-Report.xlsx"
+send-file.ts --group "120363xxx@g.us" --file "/path/to/data.xlsx" --filename "Q4-Report.xlsx"
 
 # Dry run to preview
-~/.claude/skills/whatsapp/scripts/wa.sh send-file.ts --phone "972501234567" --file "/path/to/doc.pdf" --dry-run
+send-file.ts --phone "972501234567" --file "/path/to/doc.pdf" --dry-run
 ```
 
 **Supported formats:** PDF, DOCX, XLSX, PPTX, TXT, ZIP, and more (max 100MB)
@@ -212,7 +209,7 @@ This wrapper:
 ### Send Contact (vCard)
 
 ```bash
-~/.claude/skills/whatsapp/scripts/wa.sh send-contact.ts --to "972501234567" --contact "972509876543:John Doe"
+send-contact.ts --to "972501234567" --contact "972509876543:John Doe"
 ```
 
 **Options:**
@@ -229,7 +226,7 @@ This wrapper:
 Fetch message history from any chat. **Defaults to your own chat** when no arguments provided - useful for reading messages sent to yourself.
 
 ```bash
-~/.claude/skills/whatsapp/scripts/wa.sh get-chat-history.ts --self --count 10
+get-chat-history.ts --self --count 10
 ```
 
 **Options:**
@@ -244,16 +241,16 @@ Fetch message history from any chat. **Defaults to your own chat** when no argum
 **Examples:**
 ```bash
 # Read last 10 messages from your own chat (sent to yourself)
-~/.claude/skills/whatsapp/scripts/wa.sh get-chat-history.ts --self --count 10
+get-chat-history.ts --self --count 10
 
 # Read messages from a specific contact
-~/.claude/skills/whatsapp/scripts/wa.sh get-chat-history.ts --chat "972501234567" --count 20
+get-chat-history.ts --chat "972501234567" --count 20
 
 # Read group messages
-~/.claude/skills/whatsapp/scripts/wa.sh get-chat-history.ts --group "120363xxx@g.us" --count 50
+get-chat-history.ts --group "120363xxx@g.us" --count 50
 
 # Find who joined a group in the last week
-~/.claude/skills/whatsapp/scripts/wa.sh get-chat-history.ts --group "120363xxx@g.us" --find-joins --days 7
+get-chat-history.ts --group "120363xxx@g.us" --find-joins --days 7
 ```
 
 **Use case:** Send a message to yourself on WhatsApp, then use this to read it - useful for sharing example templates, notes, or content you want Claude to use.
@@ -263,7 +260,7 @@ Fetch message history from any chat. **Defaults to your own chat** when no argum
 Fetch recent messages across all chats or from a specific chat.
 
 ```bash
-~/.claude/skills/whatsapp/scripts/wa.sh get-recent-messages.ts --since 24 --limit 20
+get-recent-messages.ts --since 24 --limit 20
 ```
 
 **Options:**
@@ -279,7 +276,7 @@ Fetch recent messages across all chats or from a specific chat.
 ### Search Contacts
 
 ```bash
-~/.claude/skills/whatsapp/scripts/wa.sh get-contacts.ts --search "John"
+get-contacts.ts --search "John"
 ```
 
 **Options:**
@@ -291,19 +288,19 @@ Fetch recent messages across all chats or from a specific chat.
 **Examples:**
 ```bash
 # Find a contact by name
-~/.claude/skills/whatsapp/scripts/wa.sh get-contacts.ts --search "John Smith"
+get-contacts.ts --search "John Smith"
 
 # List all groups
-~/.claude/skills/whatsapp/scripts/wa.sh get-contacts.ts --type group
+get-contacts.ts --type group
 
 # Find contacts with partial name match
-~/.claude/skills/whatsapp/scripts/wa.sh get-contacts.ts --search "John" --type user
+get-contacts.ts --search "John" --type user
 ```
 
 ### Get Contact Info
 
 ```bash
-~/.claude/skills/whatsapp/scripts/wa.sh get-contact-info.ts --phone "972501234567"
+get-contact-info.ts --phone "972501234567"
 ```
 
 **Options:**
@@ -315,7 +312,7 @@ Fetch recent messages across all chats or from a specific chat.
 ### Get Group Members
 
 ```bash
-~/.claude/skills/whatsapp/scripts/wa.sh get-group-members.ts --group "120363040650557401@g.us"
+get-group-members.ts --group "120363xxxxxxxxxxxx@g.us"
 ```
 
 **Options:**
@@ -355,7 +352,7 @@ See `contacts-aliases.example.json` for the expected format.
 ### Check Instance Status
 
 ```bash
-~/.claude/skills/whatsapp/scripts/wa.sh check-instance.ts [settings|state|reboot|logout]
+check-instance.ts [settings|state|reboot|logout]
 ```
 
 - `settings` (default) - Show full session settings

@@ -18,7 +18,7 @@ WAHA runs on a remote host (see config.local.md for connection details).
 | Media files | `/opt/waha/media/` |
 | Credentials | `/opt/waha/.env` (on host, chmod 600) |
 | Dashboard | See config.local.md for URL |
-| Local skill .env | `~/.claude/skills/whatsapp/scripts/.env` (points to host) |
+| Local skill .env | The whatsapp skill's `scripts/.env` (points to host) |
 
 ## Auto-recovery after crash/reboot
 
@@ -29,18 +29,18 @@ The setup is designed to self-heal without manual intervention:
 3. **Container starts** → WhatsApp session starts automatically (`WHATSAPP_RESTART_ALL_SESSIONS=True`)
 4. **Session starts** → Auth keys + store config are preserved (bind-mount at `/opt/waha/sessions/`)
 
-After a crash or reboot, give it ~30 seconds and check `wa.sh check-instance.ts state`. It should show WORKING. If it shows FAILED, a simple reboot usually fixes it. **Do not logout or recreate the session** unless you've confirmed the session data is actually corrupted (bad decrypt errors in logs).
+After a crash or reboot, give it ~30 seconds and check `check-instance.ts state`. It should show WORKING. If it shows FAILED, a simple reboot usually fixes it. **Do not logout or recreate the session** unless you've confirmed the session data is actually corrupted (bad decrypt errors in logs).
 
 ## Quick reference
 
-Replace `SSH_ALIAS` below with the SSH alias from config.local.md.
+Replace `SSH_ALIAS` below with the SSH alias from config.local.md. Commands ending in `.ts` are whatsapp skill scripts: run them as that skill's Running Commands section shows.
 
 ```bash
 # Check session status (from local machine, via skill scripts)
-wa.sh check-instance.ts state
+check-instance.ts state
 
 # Restart session (recovers from FAILED, preserves auth + store)
-wa.sh check-instance.ts reboot
+check-instance.ts reboot
 
 # View container logs
 ssh SSH_ALIAS 'docker logs waha --tail 100'
@@ -74,7 +74,7 @@ Then open the dashboard (URL from config.local.md) and scan QR with WhatsApp (Li
 **Session FAILED:**
 Most common issue. Usually recovers with a reboot:
 ```bash
-wa.sh check-instance.ts reboot
+check-instance.ts reboot
 ```
 If reboot doesn't help, check logs: `ssh SSH_ALIAS 'docker logs waha --tail 200'`
 
@@ -82,10 +82,10 @@ If reboot doesn't help, check logs: `ssh SSH_ALIAS 'docker logs waha --tail 200'
 API key mismatch between host `.env` and local skill `.env`. After rotating credentials, do a full container restart (`docker compose down && up`), not just `docker compose restart`.
 
 **Messages returning empty / store not syncing:**
-Check `wa.sh check-instance.ts state` — verify `store.enabled: true` and `store.fullSync: true` in the config. If missing, the session was created without store config. Must logout and recreate.
+Check `check-instance.ts state` — verify `store.enabled: true` and `store.fullSync: true` in the config. If missing, the session was created without store config. Must logout and recreate.
 
 **"bad decrypt" sync errors in logs:**
-Encryption keys are corrupted. Logout (`wa.sh check-instance.ts logout`) and recreate the session (QR re-scan required).
+Encryption keys are corrupted. Logout (`check-instance.ts logout`) and recreate the session (QR re-scan required).
 
 **SCAN_QR_CODE status:**
 Open the WAHA dashboard (URL from config.local.md) and scan the QR code.

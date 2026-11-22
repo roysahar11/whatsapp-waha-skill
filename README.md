@@ -56,12 +56,23 @@ ln -s "$(pwd)/whatsapp-waha-skill/whatsapp" ~/.claude/skills/whatsapp
 ln -s "$(pwd)/whatsapp-waha-skill/waha-admin" ~/.claude/skills/waha-admin
 ```
 
+**Codex:**
+```bash
+git clone https://github.com/roysahar11/whatsapp-waha-skill.git
+ln -s "$(pwd)/whatsapp-waha-skill/whatsapp" ~/.agents/skills/whatsapp
+ln -s "$(pwd)/whatsapp-waha-skill/waha-admin" ~/.agents/skills/waha-admin
+```
+
+One clone can serve several agents: link the same two folders into each agent's skills directory.
+
 **Other agents:** Clone the repo and point your agent's skill configuration to the `whatsapp/SKILL.md` file. The exact method varies by agent — consult your agent's documentation for how to register skills.
 
 ### 2. Install dependencies
 
+From the folder you cloned into:
+
 ```bash
-cd ~/.claude/skills/whatsapp/scripts
+cd whatsapp-waha-skill/whatsapp/scripts
 npm install
 ```
 
@@ -100,21 +111,23 @@ Then open `http://localhost:3000/dashboard` and scan the QR code with WhatsApp (
 
 ### 5. Configure
 
+In the repo folder (`whatsapp-waha-skill`); the links make these the files your agent reads:
+
 ```bash
 # Script credentials
-cp ~/.claude/skills/whatsapp/scripts/.env.example ~/.claude/skills/whatsapp/scripts/.env
+cp whatsapp/scripts/.env.example whatsapp/scripts/.env
 # Edit .env with your WAHA URL and API key
 
 # Personal config (default phone, preferences)
-cp ~/.claude/skills/whatsapp/config.example.md ~/.claude/skills/whatsapp/config.local.md
+cp whatsapp/config.example.md whatsapp/config.local.md
 # Edit config.local.md with your phone number
 
 # Optional: contact aliases
-cp ~/.claude/skills/whatsapp/scripts/contacts-aliases.example.json ~/.claude/skills/whatsapp/scripts/contacts-aliases.json
+cp whatsapp/scripts/contacts-aliases.example.json whatsapp/scripts/contacts-aliases.json
 # Edit with your frequently used contacts
 
 # WAHA admin config (if using remote host)
-cp ~/.claude/skills/waha-admin/config.example.md ~/.claude/skills/waha-admin/config.local.md
+cp waha-admin/config.example.md waha-admin/config.local.md
 # Edit with your host details
 ```
 
@@ -140,11 +153,11 @@ Without aliases, the agent would need to search the WAHA contacts API every time
 
 ### Setup
 
-Copy the example file and add your contacts:
+In the repo folder, copy the example file and add your contacts:
 
 ```bash
-cp ~/.claude/skills/whatsapp/scripts/contacts-aliases.example.json \
-   ~/.claude/skills/whatsapp/scripts/contacts-aliases.json
+cp whatsapp/scripts/contacts-aliases.example.json \
+   whatsapp/scripts/contacts-aliases.json
 ```
 
 ```json
@@ -203,7 +216,6 @@ whatsapp-waha-skill/
 │   ├── config.local.md       # Your personal config (gitignored)
 │   ├── config.example.md     # Template for config.local.md
 │   └── scripts/
-│       ├── wa.sh             # Wrapper script (entry point for all commands)
 │       ├── waha-utils.ts     # Shared WAHA API utilities
 │       ├── send-message.ts   # Send text messages (individual, group, broadcast)
 │       ├── send-image.ts     # Send images with optional caption
