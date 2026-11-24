@@ -1,6 +1,7 @@
 import * as path from "path";
 import * as fs from "fs";
-import { execSync } from "child_process";
+import * as os from "os";
+import { execFileSync } from "child_process";
 import { getWahaConfig, wahaHeaders, resolveRecipient, makeChatId } from "./waha-utils";
 
 interface Args {
@@ -39,17 +40,21 @@ function parseArgs(): Args {
 
 function checkFfmpeg(): boolean {
   try {
-    execSync("ffmpeg -version", { stdio: "ignore" });
+    execFileSync("ffmpeg", ["-version"], { stdio: "ignore" });
     return true;
   } catch {
     return false;
   }
 }
 
+// Converts into a private temp folder, and runs ffmpeg without a shell: a file name can
+// then neither run commands nor overwrite (and later delete) an .ogg next to the input.
 function convertToOgg(inputPath: string): string {
-  const outputPath = inputPath.replace(/\.[^.]+$/, ".ogg");
-  execSync(
-    `ffmpeg -y -i "${inputPath}" -c:a libopus -b:a 64k -vbr on -compression_level 10 "${outputPath}"`,
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wa-voice-"));
+  const outputPath = path.join(dir, path.basename(inputPath).replace(/\.[^.]+$/, "") + ".ogg");
+  execFileSync(
+    "ffmpeg",
+    ["-y", "-i", `file:${path.resolve(inputPath)}`, "-c:a", "libopus", "-b:a", "64k", "-vbr", "on", "-compression_level", "10", outputPath],
     { stdio: "ignore" }
   );
   return outputPath;
@@ -156,8 +161,8 @@ async function main() {
     console.log(`✓ Voice note sent! ID: ${msgId}`);
 
     // Clean up converted file if we created one
-    if (finalPath !== args.audioPath && fs.existsSync(finalPath)) {
-      fs.unlinkSync(finalPath);
+    if (finalPath !== args.audioPath) {
+      fs.rmSync(path.dirname(finalPath), { recursive: true, force: true });
     }
   } catch (error) {
     console.error("Error:", error);
