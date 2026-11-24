@@ -1,4 +1,4 @@
-import { getWahaConfig, wahaHeaders, formatChatId, formatGroupId, makeChatId } from "./waha-utils";
+import { getWahaConfig, wahaHeaders, formatChatId, formatGroupId, makeChatId, fetchGroupParticipantMap, fetchContactNameMap, resolveSenderName } from "./waha-utils";
 
 interface Args {
   chatId?: string;
@@ -118,15 +118,22 @@ async function main() {
   const cutoffTimestamp = Math.floor(Date.now() / 1000) - args.since * 3600;
 
   try {
-    const messages: Array<{ timestamp: number; type: string; text: string; chatId: string; from: string }> = [];
+    const messages: Array<{ timestamp: number; type: string; text: string; chatId: string; from: string; fromMe: boolean }> = [];
+
+    // Fetch contact name map once for sender resolution
+    const contactNameMap = await fetchContactNameMap();
 
     if (args.chatId) {
       // Fetch from specific chat
       const targetChat = resolveChatId(args.chatId);
+      const isGroup = targetChat.includes("@g.us");
       console.error(`Fetching messages from: ${targetChat}`);
       console.error(`Since: ${args.since} hours ago\n`);
 
-      const chatMessages = await getChatMessages(targetChat, args.limit);
+      const [chatMessages, participantMap] = await Promise.all([
+        getChatMessages(targetChat, args.limit),
+        isGroup ? fetchGroupParticipantMap(targetChat) : Promise.resolve(undefined),
+      ]);
 
       for (const msg of chatMessages) {
         if (msg.timestamp >= cutoffTimestamp) {
@@ -135,7 +142,8 @@ async function main() {
             type: msg._data?.type || "chat",
             text: getMessageText(msg),
             chatId: targetChat,
-            from: msg._data?.notifyName || msg.from || "Unknown",
+            fromMe: !!msg.fromMe,
+            from: resolveSenderName(msg, participantMap, contactNameMap),
           });
         }
       }
@@ -150,7 +158,11 @@ async function main() {
         if (!chatId) continue;
 
         try {
-          const chatMessages = await getChatMessages(chatId, Math.min(args.limit, 10));
+          const isGroup = chatId.includes("@g.us");
+          const [chatMessages, participantMap] = await Promise.all([
+            getChatMessages(chatId, Math.min(args.limit, 10)),
+            isGroup ? fetchGroupParticipantMap(chatId) : Promise.resolve(undefined),
+          ]);
 
           for (const msg of chatMessages) {
             if (msg.timestamp >= cutoffTimestamp) {
@@ -159,7 +171,8 @@ async function main() {
                 type: msg._data?.type || "chat",
                 text: getMessageText(msg),
                 chatId,
-                from: msg._data?.notifyName || msg.from || "Unknown",
+                fromMe: !!msg.fromMe,
+                from: resolveSenderName(msg, participantMap, contactNameMap),
               });
             }
           }

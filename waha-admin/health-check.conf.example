@@ -1,0 +1,19 @@
+# Health check configuration
+# Copy to health-check.conf and fill in your values.
+# On the VPS, place next to health-check.sh (e.g. /opt/waha/health-check.conf).
+
+# Your WhatsApp number in WAHA format (alerts go here)
+SELF_CHAT="972501234567@c.us"
+
+# Groups to monitor — mix of weekday-active and weekend-active.
+# Format: "groupId|friendlyName"
+# Alert fires only when ALL groups are stale, so pick 2-3 with
+# different activity patterns to avoid false positives.
+MONITOR_GROUPS=(
+  "120363000000000000@g.us|Weekday Group 1"
+  "120363000000000001@g.us|Weekday Group 2"
+  "120363000000000002@g.us|Weekend Group"
+)
+
+# Hours without messages before a group is considered stale
+STALE_HOURS=24

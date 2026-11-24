@@ -84,7 +84,7 @@ async function main() {
     console.error("======================================");
     console.error("");
     console.error("Usage:");
-    console.error('  npx ts-node get-group-members.ts --group "120363040650557401@g.us"');
+    console.error('  npx ts-node get-group-members.ts --group "120363xxxxxxxxxxxx@g.us"');
     console.error('  npx ts-node get-group-members.ts --group "GROUP_ID" --format json');
     console.error('  npx ts-node get-group-members.ts --group "GROUP_ID" --output members.txt');
     console.error("");

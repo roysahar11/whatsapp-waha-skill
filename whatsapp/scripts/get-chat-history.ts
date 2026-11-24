@@ -1,4 +1,4 @@
-import { getWahaConfig, wahaHeaders, formatChatId, makeChatId, getOwnPhone } from "./waha-utils";
+import { getWahaConfig, wahaHeaders, formatChatId, makeChatId, getOwnPhone, fetchGroupParticipantMap, fetchContactNameMap, resolveSenderName } from "./waha-utils";
 
 interface Args {
   groupId?: string;
@@ -98,8 +98,8 @@ function getMessageType(msg: any): string {
   return msg._data?.type || msg.type || "unknown";
 }
 
-function getSenderName(msg: any): string {
-  return msg._data?.notifyName || msg.from || "Unknown";
+function getSenderName(msg: any, participantMap?: Map<string, string>, contactNameMap?: Map<string, string>): string {
+  return resolveSenderName(msg, participantMap, contactNameMap);
 }
 
 async function main() {
@@ -143,7 +143,13 @@ async function main() {
     console.error(`Fetching chat history from: ${chatId}`);
     console.error(`Fetching up to ${args.count} messages...\n`);
 
-    const messages = await getChatHistory(chatId, args.count, args.since);
+    // Fetch lookup maps for sender resolution
+    const isGroup = !!args.groupId;
+    const [messages, participantMap, contactNameMap] = await Promise.all([
+      getChatHistory(chatId, args.count, args.since),
+      isGroup ? fetchGroupParticipantMap(chatId) : Promise.resolve(undefined),
+      fetchContactNameMap(),
+    ]);
 
     if (args.findJoins) {
       const joinMessages = messages.filter((msg) => {
@@ -197,7 +203,8 @@ async function main() {
         const slim = messages.map((msg) => ({
           timestamp: msg.timestamp,
           body: msg.body || "",
-          senderName: getSenderName(msg),
+          fromMe: !!msg.fromMe,
+          senderName: getSenderName(msg, participantMap, contactNameMap),
           type: getMessageType(msg),
           hasMedia: !!msg.hasMedia,
           fileName: msg.media?.filename || msg._data?.filename || null,
@@ -211,7 +218,7 @@ async function main() {
         for (const msg of messages) {
           const text = getMessageText(msg) || `[${getMessageType(msg)}]`;
           console.log(`📅 ${formatTimestamp(msg.timestamp)}`);
-          console.log(`   From: ${getSenderName(msg)}`);
+          console.log(`   From: ${getSenderName(msg, participantMap, contactNameMap)}`);
           console.log(`   Type: ${getMessageType(msg)}`);
           console.log(`   ${text.substring(0, 100)}${text.length > 100 ? "..." : ""}`);
           if (msg.hasMedia && msg.media?.filename) {

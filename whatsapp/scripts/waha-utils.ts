@@ -19,8 +19,10 @@ export function wahaHeaders(): Record<string, string> {
 }
 
 export function formatChatId(phone: string): string {
+  // A full chat id (123@lid, 972...@c.us, ...@s.whatsapp.net) passes through verbatim —
+  // stripping non-digits first would silently turn "123@lid" into "123@c.us".
+  if (phone.includes("@")) return phone;
   const cleaned = phone.replace(/[^0-9]/g, "");
-  if (cleaned.includes("@")) return cleaned;
   return `${cleaned}@c.us`;
 }
 
@@ -57,6 +59,7 @@ export function normalizePhone(phone: string): string {
 
 export function makeChatId(id: string, isGroup: boolean): string {
   if (isGroup) return formatGroupId(id);
+  if (id.includes("@")) return id;
   return formatChatId(normalizePhone(id));
 }
 
@@ -85,6 +88,87 @@ export async function getOwnPhone(): Promise<string> {
   const data: any = await response.json();
   // me.id is like "972XXXXXXXXX@c.us"
   return data.me?.id?.replace(/@c\.us$/, "") || "";
+}
+
+/**
+ * Fetches group participants and returns a LID→phone map.
+ */
+export async function fetchGroupParticipantMap(groupId: string): Promise<Map<string, string>> {
+  const { apiUrl, session } = getWahaConfig();
+  const url = `${apiUrl}/api/${session}/groups/${groupId}/participants`;
+  const response = await fetch(url, { headers: wahaHeaders() });
+  const map = new Map<string, string>();
+  if (!response.ok) return map;
+  const participants = (await response.json()) as any[];
+  for (const p of participants) {
+    if (p.id && p.phoneNumber) {
+      const phone = p.phoneNumber.replace(/@s\.whatsapp\.net$/, "");
+      map.set(p.id, phone);
+    }
+  }
+  return map;
+}
+
+/**
+ * Fetches all contacts and returns a phone→display name map.
+ * Phone keys are digits only (e.g. "972501234567").
+ * Display name prefers contact name, then pushname.
+ */
+export async function fetchContactNameMap(): Promise<Map<string, string>> {
+  const { apiUrl, session } = getWahaConfig();
+  const map = new Map<string, string>();
+  try {
+    const url = `${apiUrl}/api/contacts/all?session=${session}`;
+    const response = await fetch(url, { headers: wahaHeaders(), signal: AbortSignal.timeout(10000) });
+    if (!response.ok) return map;
+    const contacts = (await response.json()) as any[];
+    for (const c of contacts) {
+      const displayName = c.name || c.pushname;
+      if (displayName && c.id) {
+        const phone = c.id.replace(/@c\.us$/, "");
+        map.set(phone, displayName);
+      }
+    }
+  } catch {
+    // Timeout or parse error — return empty map, callers fall back to phone numbers
+  }
+  return map;
+}
+
+/**
+ * Resolves a message sender to a display name.
+ * Priority: "You" (if fromMe) → notifyName → contact name → pushname → phone number → participant LID → msg.from
+ */
+export function resolveSenderName(
+  msg: any,
+  participantMap?: Map<string, string>,
+  contactNameMap?: Map<string, string>,
+): string {
+  if (msg.fromMe) return "You";
+  if (msg._data?.notifyName) return msg._data.notifyName;
+
+  // For group messages, resolve participant LID → phone → contact name
+  const participant = msg.participant || msg._data?.participant;
+  if (participant && participantMap) {
+    const phone = participantMap.get(participant);
+    if (phone) {
+      if (contactNameMap) {
+        const name = contactNameMap.get(phone);
+        if (name) return name;
+      }
+      return phone;
+    }
+    return participant;
+  }
+
+  // For private chats, try contact name by phone from msg.from
+  if (msg.from && contactNameMap) {
+    const phone = msg.from.replace(/@c\.us$/, "").replace(/@s\.whatsapp\.net$/, "");
+    const name = contactNameMap.get(phone);
+    if (name) return name;
+  }
+
+  return msg.from || "Unknown";
 }
 
 export async function wahaFetch(endpoint: string, options: RequestInit = {}): Promise<any> {

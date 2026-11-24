@@ -108,7 +108,7 @@ This invocation does not expand authorization. External sends follow Rule 2, inc
 
 ## Prerequisites
 
-1. WAHA instance running and accessible (image `devlikeapro/waha-plus:noweb`, NOWEB engine)
+1. WAHA instance running and accessible (image `devlikeapro/waha:noweb` — the free core image, NOWEB engine)
 2. WAHA session connected (WhatsApp linked via QR code on the WAHA dashboard)
 3. `.env` file configured in the `scripts/` folder (see `.env.example`)
 
@@ -231,10 +231,10 @@ get-chat-history.ts --self --count 10
 
 **Options:**
 - `--self` - Read from your own chat - **DEFAULT if no chat specified**
-- `--chat <NUMBER>` - Read from a specific contact's chat
+- `--chat <NUMBER>` - Read from a specific contact's chat (a phone number, or a full chat id such as `123@lid`, passed through verbatim)
 - `--group <ID>` - Read from a group chat
 - `--count <N>` - Number of messages to fetch (default: 100)
-- `--format <FMT>` - Output format: simple (default) or json
+- `--format <FMT>` - Output format: simple (default), json, or slim-json. **`simple` truncates each message to 100 characters** — use `slim-json` whenever you need the full text (links, long messages)
 - `--find-joins` - Find people who joined (for groups)
 - `--days <N>` - Filter joins from last N days (default: 21)
 
@@ -269,9 +269,83 @@ get-recent-messages.ts --since 24 --limit 20
 - `--since <HOURS>` - Only show messages from last N hours (default: 24)
 - `--all` - Show all message types
 
+### Download Media
+
+Download and decrypt media files (videos, images, audio) from any chat. Handles WhatsApp's end-to-end encryption automatically.
+
+```bash
+download-media.ts --chat "972501234567" -o ./output
+```
+
+**Options:**
+- `--chat <NUMBER>` - Download from a contact's chat
+- `--group <ID>` - Download from a group chat
+- `--self` - Download from your own chat
+- `-o, --output DIR` - Output directory (default: current dir)
+- `--count <N>` - Number of messages to scan (default: 100)
+- `--types <TYPES>` - Comma-separated: video,audio,image (default: all three)
+- `--dry-run` - List media without downloading
+
+**Examples:**
+```bash
+# List all media in a chat without downloading
+download-media.ts --chat "972501234567" --dry-run
+
+# Download only videos
+download-media.ts --chat "972501234567" --types video -o ./videos
+
+# Download from a group
+download-media.ts --group "120363xxx@g.us" -o ./group-media
+```
+
+**Output:** Files named `{timestamp}_{sent|recv}_{type}_{id}.{ext}` + a `manifest.json` with metadata. Skips files that already exist.
+
 ---
 
 ## Contacts & Groups
+
+### Finding a Person's Chat
+
+WAHA's contact store is **incomplete**, so a name search can miss someone who is plainly in the
+user's phone:
+
+- **Address-book names saved after the session was linked often never sync.** The NOWEB engine
+  gets them through app-state patches it frequently fails to decrypt (see `waha-admin`, "bad
+  decrypt"). The name the user gave the contact ("Noa - Fractional CTO") may simply not exist here.
+- **1:1 chats carry no name at all** — the chats list returns bare ids.
+- **Most contacts are keyed by an `@lid` id**, not a phone-based `@c.us` one.
+
+What every incoming message *does* carry is the sender's own WhatsApp profile name (pushName) and
+its text. So search in this order, stopping at the first hit:
+
+1. `contacts-aliases.json` (see Contact Aliases below)
+2. `get-contacts.ts --search "<name>"`
+3. `find-chat.ts --name "<name>"` — the person's **own** profile name, which is often in English
+   even when the user refers to them in Hebrew (try both: `"Noa"` and `"נועה"`)
+4. `find-chat.ts --text "<word>"` — something distinctive they wrote: their company, a link
+   domain, the topic you are looking for
+5. Only then ask the user for the phone number
+
+### Find Chat
+
+```bash
+find-chat.ts --name "Noa"
+find-chat.ts --text "acmecorp"
+```
+
+Scans the most recent 1:1 chats and matches the contact-store names, the senders' profile names,
+and the message text. Prints each matching chat's phone, names, last activity, matching snippets,
+and the ready-to-run `get-chat-history.ts` command. ~10 seconds for 300 chats.
+
+**Options:**
+- `--name <TEXT>` - Match contact-store name or the sender's profile name (substring, case-insensitive)
+- `--text <TEXT>` - Match message text (substring, case-insensitive); either match counts when both are given
+- `--chats <N>` - Recent chats to scan (default: 300; only the 1:1 ones are read)
+- `--messages <N>` - Messages to read per chat (default: 40)
+- `--format <FMT>` - simple (default) or json
+
+Limits: a person who never wrote to the user has no profile name to match, and a chat older than
+the scan window needs a larger `--chats`.
 
 ### Search Contacts
 
@@ -281,7 +355,7 @@ get-contacts.ts --search "John"
 
 **Options:**
 - `--search <NAME>` - Search by name
-- `--type <TYPE>` - Filter: user, group, or all (default: all)
+- `--type <TYPE>` - Filter: user, group, or all (default: all). `user` covers both `@lid` and `@c.us` contacts; `@lid` results show the resolved phone number
 - `--limit <N>` - Limit number of results
 - `--format <FMT>` - Output: simple (default) or json
 
@@ -341,7 +415,7 @@ If the file `scripts/contacts-aliases.json` exists, it contains pre-defined alia
 **Workflow for finding contacts:**
 1. **FIRST** - Read `contacts-aliases.json` and check if the name matches any alias
 2. **IF FOUND** - Use the phone number and language from the alias
-3. **IF NOT FOUND** - Then use the `get-contacts.ts` script to search via API
+3. **IF NOT FOUND** - Continue with the search order in [Finding a Person's Chat](#finding-a-persons-chat)
 
 See `contacts-aliases.example.json` for the expected format.
 

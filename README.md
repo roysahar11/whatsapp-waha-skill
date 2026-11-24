@@ -34,7 +34,7 @@ You ──→ AI Agent ──→ WhatsApp Skill (TypeScript scripts) ──→ W
 
 The skill's TypeScript scripts call WAHA's API endpoints to send messages, read chats, manage contacts, etc. Your AI agent orchestrates everything: it resolves recipients, drafts messages, applies the recipient-based approval rules, and executes the right script.
 
-This skill should work with both [WAHA Core](https://waha.devlike.pro/) (free) and [WAHA Plus](https://waha.devlike.pro/docs/how-to/waha-plus/), but has only been tested with WAHA Plus. The Docker commands below use the Plus image (`devlikeapro/waha-plus:noweb`) — to use Core instead, replace it with `devlikeapro/waha:noweb`.
+As of WAHA **2026.6.1** every feature that used to require WAHA Plus ships in the free **core** image, and the separate `devlikeapro/waha-plus` image no longer exists. Use `devlikeapro/waha` — no license key needed. (On older WAHA versions this skill worked against both editions.)
 
 ## Prerequisites
 
@@ -87,7 +87,7 @@ docker run -d \
   -e WAHA_DASHBOARD_ENABLED=true \
   -e WAHA_API_KEY=your-secret-key \
   -v ./sessions:/tmp/sessions \
-  devlikeapro/waha-plus:noweb
+  devlikeapro/waha:noweb
 ```
 
 **Option B: Remote VPS**
@@ -129,6 +129,10 @@ cp whatsapp/scripts/contacts-aliases.example.json whatsapp/scripts/contacts-alia
 # WAHA admin config (if using remote host)
 cp waha-admin/config.example.md waha-admin/config.local.md
 # Edit with your host details
+
+# Optional: health-check monitoring (waha-health-check.sh, run from cron on the WAHA host)
+cp waha-admin/health-check.conf.example waha-admin/health-check.conf
+# Edit with your self-chat number and the group IDs to monitor
 ```
 
 ### 6. Verify

@@ -1,9 +1,12 @@
-import { getWahaConfig, wahaHeaders } from "./waha-utils";
+import { getWahaConfig, wahaHeaders, wahaFetch } from "./waha-utils";
 
 interface WahaContact {
   id: string;
   name?: string;
   pushname?: string;
+  verifiedName?: string;
+  lid?: string;
+  phoneNumber?: string;
   isGroup?: boolean;
   isMyContact?: boolean;
 }
@@ -71,15 +74,34 @@ function normalizeString(str: string): string {
 
 function matchesSearch(contact: WahaContact, search: string): boolean {
   const searchNorm = normalizeString(search);
-  const name = normalizeString(contact.name || "");
-  const pushname = normalizeString(contact.pushname || "");
-  const id = normalizeString(contact.id || "");
+  const fields = [contact.name, contact.pushname, contact.verifiedName, contact.id];
+  return fields.some((f) => normalizeString(f || "").includes(searchNorm));
+}
 
-  return name.includes(searchNorm) || pushname.includes(searchNorm) || id.includes(searchNorm);
+function isGroupContact(c: WahaContact): boolean {
+  return !!c.isGroup || c.id.endsWith("@g.us");
+}
+
+// Individual people. Most contacts are now keyed by an @lid id rather than a phone-based
+// @c.us one — filtering on "@c.us" alone silently drops most of the address book.
+function isUserContact(c: WahaContact): boolean {
+  return !isGroupContact(c) && !c.id.endsWith("@newsletter") && !c.id.endsWith("@broadcast");
 }
 
 function extractPhoneNumber(id: string): string {
   return id.replace("@c.us", "").replace("@g.us", "");
+}
+
+// An @lid id is not a phone number; resolve it through WAHA's LID map.
+async function resolveLidPhone(contact: WahaContact): Promise<string | undefined> {
+  if (contact.phoneNumber) return contact.phoneNumber.replace(/@.*$/, "");
+  try {
+    const { session } = getWahaConfig();
+    const res = await wahaFetch(`/api/${session}/lids/${encodeURIComponent(contact.id)}`);
+    return res?.pn ? String(res.pn).replace(/@.*$/, "") : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 async function main() {
@@ -90,7 +112,7 @@ async function main() {
     console.error("==============================");
     console.error("");
     console.error("Usage:");
-    console.error('  npx ts-node get-contacts.ts --search "ערן"');
+    console.error('  npx ts-node get-contacts.ts --search "ישראל"');
     console.error('  npx ts-node get-contacts.ts --search "John" --type user');
     console.error('  npx ts-node get-contacts.ts --type group --limit 10');
     console.error("");
@@ -101,7 +123,7 @@ async function main() {
     console.error("  --format <FMT>    Output: simple (default) or json");
     console.error("");
     console.error("Examples:");
-    console.error('  npx ts-node get-contacts.ts --search "ערן שמשי"');
+    console.error('  npx ts-node get-contacts.ts --search "ישראל ישראלי"');
     console.error('  npx ts-node get-contacts.ts --type group');
     process.exit(0);
   }
@@ -113,11 +135,7 @@ async function main() {
 
     // Filter by type
     if (args.type && args.type !== "all") {
-      if (args.type === "group") {
-        contacts = contacts.filter((c) => c.isGroup || c.id.includes("@g.us"));
-      } else {
-        contacts = contacts.filter((c) => !c.isGroup && c.id.includes("@c.us"));
-      }
+      contacts = contacts.filter(args.type === "group" ? isGroupContact : isUserContact);
     }
 
     // Filter by search term
@@ -132,6 +150,13 @@ async function main() {
 
     if (contacts.length === 0) {
       console.error("No contacts found matching your criteria.");
+      if (args.search) {
+        console.error("");
+        console.error("WAHA's contact store is incomplete: names saved in the phone's address book after the");
+        console.error("session was linked often never sync (NOWEB app-state sync). Search the chats instead:");
+        console.error(`  find-chat.ts --name "${args.search}"      # the person's own WhatsApp profile name`);
+        console.error('  find-chat.ts --text "<word they used>"   # e.g. their company, a link domain, a topic');
+      }
       process.exit(0);
     }
 
@@ -141,13 +166,21 @@ async function main() {
       console.log(JSON.stringify(contacts, null, 2));
     } else {
       for (const contact of contacts) {
-        const phone = extractPhoneNumber(contact.id);
-        const isGroup = contact.isGroup || contact.id.includes("@g.us");
-        const displayName = contact.name || contact.pushname || "(no name)";
+        const isGroup = isGroupContact(contact);
+        const isLid = contact.id.endsWith("@lid");
+        const displayName = contact.name || contact.pushname || contact.verifiedName || "(no name)";
         const typeIcon = isGroup ? "👥" : "👤";
 
         console.log(`${typeIcon} ${displayName}`);
-        console.log(`   ${isGroup ? "Group ID" : "Phone"}: ${phone}`);
+        if (isGroup) {
+          console.log(`   Group ID: ${extractPhoneNumber(contact.id)}`);
+        } else if (isLid) {
+          const phone = await resolveLidPhone(contact);
+          console.log(`   Phone: ${phone || "(unknown — use the LID as the chat id)"}`);
+          console.log(`   LID: ${contact.id}`);
+        } else {
+          console.log(`   Phone: ${extractPhoneNumber(contact.id)}`);
+        }
         if (contact.pushname && contact.name && contact.pushname !== contact.name) {
           console.log(`   Push name: ${contact.pushname}`);
         }

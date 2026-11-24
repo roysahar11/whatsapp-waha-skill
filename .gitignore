@@ -1,6 +1,9 @@
 # Personal config (contains phone numbers, host details, etc.)
 */config.local.md
 
+# Health-check config (contains your self-chat number and monitored group IDs)
+*/health-check.conf
+
 # Secrets
 */.env
 *.env
